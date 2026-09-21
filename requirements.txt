@@ -1,0 +1,6 @@
+# Versions the published results were generated with (Python 3.12).
+# Newer versions should work; if numbers differ, pin to these first.
+tellurium==2.2.13.1
+python-libsbml==5.21.2
+numpy==2.4.4
+matplotlib==3.10.8
