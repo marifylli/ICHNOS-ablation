@@ -1,0 +1,46 @@
+{
+  "generated_utc": "2026-09-21T17:14:23.584200+00:00",
+  "repos": {
+    "FINAL": {
+      "url": "https://github.com/ioanna888/Ichnos-Final-Model.git",
+      "commit": "caf14266700071aae4f92d508b6141ff367f04eb"
+    },
+    "PULSE": {
+      "url": "https://github.com/ioanna888/Ichnos_PULSE.git",
+      "commit": "a4af617f27dc95549e9fd859a0e5794cbc70a5e3"
+    }
+  },
+  "snapshots": {
+    "ox_FINAL": {
+      "file": "merged_ox_FINAL.sbml",
+      "sha256": "e3752b52466766827c424477ae477bf0098e847897bfba1ba85f728dc8ea8448",
+      "commit": "caf14266700071aae4f92d508b6141ff367f04eb"
+    },
+    "er_FINAL": {
+      "file": "merged_er_FINAL.sbml",
+      "sha256": "80dd7977af700e9741f24148ba5c59be20d1934e86be96a9c92ab131986898de",
+      "commit": "caf14266700071aae4f92d508b6141ff367f04eb"
+    },
+    "ox_PULSE": {
+      "file": "merged_ox_PULSE.sbml",
+      "sha256": "49684d48907e914419a0d0657e7fa530099908caede9fde10c90799079301fa0",
+      "commit": "a4af617f27dc95549e9fd859a0e5794cbc70a5e3"
+    },
+    "er_PULSE": {
+      "file": "merged_er_PULSE.sbml",
+      "sha256": "af7132b2e89b09706a1a16009198fc63e21f1d2b0ba046b9946c104c364dc399",
+      "commit": "a4af617f27dc95549e9fd859a0e5794cbc70a5e3"
+    }
+  },
+  "downstream_sha": {
+    "FINAL": {
+      "integration/reporter_module_v2.sbml": "738009d231b79dc275c13b87005202bb97f0ae459ee421326da067480aa002f4",
+      "integration/TIP_TetR_binding.sbml": "217e162a61f50a96fa9720bdab4471db7ecdc8ebe1c3226359079280ec192706"
+    },
+    "PULSE": {
+      "integration/reporter_module_v2.sbml": "738009d231b79dc275c13b87005202bb97f0ae459ee421326da067480aa002f4",
+      "integration/TIP_TetR_binding.sbml": "217e162a61f50a96fa9720bdab4471db7ecdc8ebe1c3226359079280ec192706"
+    }
+  },
+  "downstream_identical": true
+}

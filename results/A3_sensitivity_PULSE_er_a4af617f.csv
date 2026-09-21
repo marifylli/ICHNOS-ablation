@@ -1,0 +1,7 @@
+part,note,gate,d_green_pct,d_ratio_pct,n_eff,fold_range
+no_TetR_feedback,removes the linearisation; saturation expected,viable,880.463216065692,-20.605141046776815,9.438079535936025,20.29021905203357
+no_adaptation,kills the sensor's own feedback,viable,118.81525541381252,-18.16813313812946,9.531657442761459,6.072024811002455
+no_FRET_correction,E = 0: removes the FRET bleed-through term,viable,12.415456652092752,-11.044261757199209,3.0944991687829724,3.490565276662865
+no_leaky_expression,alpha_0 = 0: removes basal TIP production,viable,-7.937708960434588,-1.3734748895142088,3.0800306216702356,4.695340749880434
+no_timer_split,positive control: red matures as fast as green,viable,-6.115963907088934,58.984244721435516,3.094186743326023,3.4873264874381116
+perfect_adaptation,perfect adaptor -- adaptation-depth axis,viable,0.0,0.0,3.07923085872329,3.5111575260495194

@@ -1,0 +1,6 @@
+lesion,gate,note,fold_range,fold_vs_zero,n_eff,ratio_spread_3h,ratio_spread_max
+full,viable,reference,2.687312253756322,4.737497871565363,2.6676265780412045,0.0797548095868961,0.45740364691555957
+no_TetR_feedback,saturated,removes the linearisation; saturation expected,1.2211903250051552,12.155484950486738,nan,nan,nan
+perfect_adaptation,viable,perfect adaptor -- adaptation-depth axis,2.5907963128232887,4.156966730206345,2.6627911246557088,0.06770310720384676,0.45405388513398803
+no_adaptation,saturated,kills the sensor's own feedback,1.2486099056938846,8.535717941986787,nan,nan,nan
+no_timer_split,viable,positive control: red matures as fast as green,2.665742500280806,4.6688230028070095,2.6680832729763178,0.0011565640875203533,0.05283577654642798
