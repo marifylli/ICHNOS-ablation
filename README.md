@@ -19,6 +19,7 @@ ichnos-ablation/
 │   ├── run_A_lesions.py        Step 2  - gated lesion ladder
 │   ├── run_A3_sensitivity.py   Step 3  - % change per ablated part
 │   ├── run_A4_kd_spec.py       extension - functional Kd window
+│   ├── run_A5_decoding.py      Cramer-Rao bound on (dose, t) + t* sweep
 │   ├── run_B2_structure.py     static vs adaptive sensor, same protocol
 │   └── run_B1_aicc.py          model selection on data (awaiting data)
 ├── data/README.md              provenance spec for B1 input
@@ -62,6 +63,7 @@ python arms/run_B2_structure.py er
 | 2. Parameter ablation | `arms/run_A_lesions.py` | gated lesion ladder |
 | 3. Sensitivity comparison | `arms/run_A3_sensitivity.py` | % change per ablated part |
 | (extension) design spec | `arms/run_A4_kd_spec.py` | functional Kd window |
+| (extension) decoding bound | `arms/run_A5_decoding.py` | sigma_t, sigma_dose per lesion |
 
 ## The three arms — do NOT merge them into one table
 
@@ -74,6 +76,23 @@ python arms/run_B2_structure.py er
 A and B2 do not fit anything — they compare performance, so there is no
 likelihood and AIC/AICc is undefined. `aicc()` lives exclusively inside
 `arms/run_B1_aicc.py` so that it cannot be called from elsewhere.
+
+## Metrics
+
+**Cooperativity is measured by fitting, not by a slope trick.** `hill_fit()`
+fits `base + (top-base)*d^n/(d^n+EC50^n)` on the wide grid `P.FIT_DOSES` and
+reports `n_H` with its standard error. The previous `n_eff` (logit slope on a
+min-max normalised 6-point grid) returned **2.03 for a true Hill n=1 and 2.03
+for a purely linear response** -- it was the estimator's fixed point, not a
+property of the circuit. `linearity_r2()` complements it: plain straight-line
+R^2 inside `OPERATING_WINDOW` only.
+
+**The decoding bound is the primary figure of merit.** `decoding_crlb()`
+returns the Cramer-Rao lower bound on a joint estimate of (time since onset,
+log dose) from both observables under multiplicative noise of size
+`NOISE_CV`. No decoder can beat it, so "this lesion costs X hours of timing
+resolution" is a hard statement. It also cannot be gamed by a dead circuit:
+the Fisher matrix goes singular and the bound diverges.
 
 ## The viability gate
 
@@ -92,6 +111,12 @@ Two folds, because they diagnose different things:
 | `dead` | < θ | < θ | does not respond |
 
 `saturated` is a **result**, not a rejection.
+
+The gate now **classifies** (dead vs saturated) rather than **scores**.
+Fitted `n_H` and `lin_r2` are reported for every lesion regardless of gate --
+a saturated circuit has a perfectly meaningful Hill coefficient, and that is
+exactly the headline finding for `no_TetR_feedback`. Only the shape metrics
+a dead circuit can win (`ratio_spread`) stay gated.
 
 **θ must be tied to the image-pipeline noise floor.** On the current grid,
 θ = 3.0 rejects even the intact circuit (ox) — always run the sweep.

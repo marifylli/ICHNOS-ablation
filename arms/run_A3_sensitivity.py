@@ -25,8 +25,17 @@ REF_DOSE = {"ox": 200, "er": 2000}   # near K_act: most informative operating po
 def extra_lesions(sbml, variant):
     """Parameter ablations in the sense of the iGEM framework (set to zero)."""
     return [("no_leaky_expression", None, {A.pname("beta_basal", variant): 0.0},
-             "alpha_0 = 0: removes basal TIP production"),
-            ("no_FRET_correction", None, {"E": 0.0},
+             "alpha_0 = 0: removes basal TIP production")]
+
+
+def observation_model_lesions(sbml, variant):
+    """NOT circuit parts -- parameters of how we OBSERVE the circuit.
+
+    E (FRET bleed-through) was previously listed next to no_leaky_expression,
+    which conflates "what the device does" with "how we measure it". A judge
+    reading one table cannot tell which rows are biology. Separate section.
+    """
+    return [("no_FRET_correction", None, {"E": 0.0},
              "E = 0: removes the FRET bleed-through term")]
 
 
@@ -41,27 +50,33 @@ def main(tag="PULSE", variant="ox"):
 
     g0, r0 = outputs(sbml, {})
     rows = []
-    for label, tf, ov, note in list(A.lesion_set(sbml, variant)) + extra_lesions(sbml, variant):
+    groups = ([("circuit", l) for l in list(A.lesion_set(sbml, variant))
+               + extra_lesions(sbml, variant)]
+              + [("observation", l) for l in observation_model_lesions(sbml, variant)])
+    for kind, (label, tf, ov, note) in groups:
         if label == "full":
             continue
         model = tf(sbml, variant) if tf else sbml
         g, r = outputs(model, ov)
         res = A.sweep(model, variant, ov)
         ok, why = A.gate(res)
-        rows.append(dict(part=label, note=note, gate=why,
+        rows.append(dict(part=label, kind=kind, note=note, gate=why,
                          d_green_pct=100 * (g - g0) / g0,
                          d_ratio_pct=100 * (r - r0) / r0,
-                         n_eff=res["n_eff"] if ok else np.nan,
+                         n_hill=res["n_hill"], se_n_hill=res["se_n_hill"],
+                         lin_r2=res["lin_r2"],
                          fold_range=res["fold_range"]))
-    rows.sort(key=lambda x: -abs(x["d_green_pct"]))
+    rows.sort(key=lambda x: (x["kind"] != "circuit", -abs(x["d_green_pct"])))
 
     print(f"\n=== A3: sensitivity -- {tag}/{variant} @ {commit}, "
           f"reference dose {dose} uM, t*={P.PRIMARY_T} h")
-    print(f"{'ablated part':>22} {'gate':>12} {'dGreen%':>9} {'dRatio%':>9} {'n_eff':>7}")
+    print(f"{'ablated part':>22} {'kind':>11} {'gate':>12} {'dGreen%':>9} "
+          f"{'dRatio%':>9} {'n_H':>7} {'linR2':>7}")
     for r in rows:
-        ne = "   -   " if np.isnan(r["n_eff"]) else f"{r['n_eff']:7.3f}"
-        print(f"{r['part']:>22} {r['gate']:>12} {r['d_green_pct']:+9.1f} "
-              f"{r['d_ratio_pct']:+9.1f} {ne}")
+        nh = "   -   " if np.isnan(r["n_hill"]) else f"{r['n_hill']:7.2f}"
+        lr = "   -   " if np.isnan(r["lin_r2"]) else f"{r['lin_r2']:7.3f}"
+        print(f"{r['part']:>22} {r['kind']:>11} {r['gate']:>12} "
+              f"{r['d_green_pct']:+9.1f} {r['d_ratio_pct']:+9.1f} {nh} {lr}")
 
     RESULTS.mkdir(exist_ok=True)
     out = RESULTS / f"A3_sensitivity_{tag}_{variant}_{commit}.csv"

@@ -7,7 +7,7 @@ PRE_T  : already converged at 20 h. WITHOUT pre-equilibration the dose
          the WRONG conclusion and leads to a wrong decoder design. This check
          documents that.
 WARMUP : no effect for 0-0.5 h (maximum spread occurs around 0.7 h).
-n_eff  : must be invariant under both.
+n_H    : must be invariant under both.
 """
 import sys
 from pathlib import Path
@@ -16,12 +16,12 @@ import numpy as np
 import protocol as P, ichnos_ablation as A
 from models import build_snapshots as S
 
-TOL = 0.02   # relative tolerance on n_eff
+TOL = 0.05   # relative tolerance on n_H (a fitted quantity, not a formula)
 
 
 def _spread3(sbml, variant):
     res = A.sweep(sbml, variant)
-    return res["ratio_spread_at_t"], res["n_eff"]
+    return res["ratio_spread_at_t"], res["n_hill"]
 
 
 def test_pre_t_converged(variant="ox", tag="PULSE"):
@@ -38,7 +38,7 @@ def test_pre_t_converged(variant="ox", tag="PULSE"):
         "Expected the cold start to UNDERESTIMATE the spread; it does not -- "
         "check the merged model's initial conditions.")
     for v in got.values():
-        assert abs(v[1] - got[50.0][1]) / got[50.0][1] < TOL, "n_eff is sensitive to PRE_T"
+        assert abs(v[1] - got[50.0][1]) / got[50.0][1] < TOL, "n_H is sensitive to PRE_T"
     return got
 
 

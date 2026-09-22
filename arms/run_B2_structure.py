@@ -44,22 +44,30 @@ def main(variant="ox"):
     bmax = A.pname("beta_max", variant)
     b_pulse = __import__("tellurium").loadSBMLModel(sb["PULSE"])[A.ids(sb["PULSE"])[bmax]]
 
-    arms = [("FINAL", "FINAL", {}),
-            ("PULSE", "PULSE", {}),
-            (f"FINAL_beta{b_pulse:g}", "FINAL", {bmax: b_pulse})]  # confound control
+    # Confound control: re-run FINAL at PULSE's gain. GUARDED -- if the two
+    # values already coincide the "control" is a no-op and must not be shown
+    # (this silently happened for er: three identical rows presented as a
+    # controlled comparison).
+    arms = [("FINAL", "FINAL", {}), ("PULSE", "PULSE", {})]
+    try:
+        A.assert_override_bites(sb["FINAL"], bmax, b_pulse, f"B2/{variant} gain control")
+        arms.append((f"FINAL_beta{b_pulse:g}", "FINAL", {bmax: b_pulse}))
+    except RuntimeError as e:
+        print(f"  ! gain-confound control SKIPPED: {e}")
 
     R, rows = {}, []
     print(f"\n=== B2: sensor structure -- variant {variant}")
-    print(f"{'arm':>18} {'fold':>7} {'vs0':>7} {'n_eff':>7} {'spr3h':>8} {'spr6h':>8} {'spr12h':>8}")
+    print(f"{'arm':>18} {'fold':>7} {'vs0':>7} {'n_H':>7} {'spr3h':>8} {'spr6h':>8} {'spr12h':>8}")
     for label, tag, ov in arms:
         res = A.sweep(sb[tag], variant, ov); R[label] = res
         t, s = res["ratio_spread_t"]
         sp = {q: float(np.interp(q, t, s)) for q in (3, 6, 12)}
         ok, why = A.gate(res)
         print(f"{label:>18} {res['fold_range']:7.3f} {res['fold_vs_zero']:7.3f} "
-              f"{res['n_eff']:7.3f} " + " ".join(f"{sp[q]:8.4f}" for q in (3, 6, 12)))
+              f"{res['n_hill']:7.3f} " + " ".join(f"{sp[q]:8.4f}" for q in (3, 6, 12)))
         rows.append(dict(arm=label, gate=why, fold_range=res["fold_range"],
-                         fold_vs_zero=res["fold_vs_zero"], n_eff=res["n_eff"],
+                         fold_vs_zero=res["fold_vs_zero"], n_hill=res["n_hill"],
+                         se_n_hill=res["se_n_hill"], lin_r2=res["lin_r2"],
                          spread_3h=sp[3], spread_6h=sp[6], spread_12h=sp[12]))
 
     # --- figure ---

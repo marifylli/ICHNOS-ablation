@@ -32,16 +32,29 @@ def main(tag="PULSE", variant="ox"):
             lesion=label, gate=why, note=note,
             fold_range=res["fold_range"], fold_vs_zero=res["fold_vs_zero"],
             # SHAPE METRICS ARE WRITTEN ONLY IF THE GATE WAS PASSED.
-            n_eff=res["n_eff"] if ok else np.nan,
+            # n_hill and lin_r2 come from a real fit on the WIDE grid and
+            # carry an SE, so they are reported for EVERY lesion, gated or
+            # not: a saturated circuit has a perfectly meaningful n_hill
+            # (that is precisely the finding). Previously the gate blanked
+            # them out and no_TetR_feedback -- the headline result -- showed
+            # as "-".
+            n_hill=res["n_hill"], se_n_hill=res["se_n_hill"],
+            ec50=res["ec50"], lin_r2=res["lin_r2"],
+            # The SHAPE metrics stay gated: those are the ones a dead
+            # circuit can win.
             ratio_spread_3h=res["ratio_spread_at_t"] if ok else np.nan,
             ratio_spread_max=res["ratio_spread_max"] if ok else np.nan))
 
     print(f"\n=== A: lesion ladder -- {tag}/{variant} @ {commit}, theta={P.THETA_DEFAULT}")
-    print(f"{'lesion':>20} {'gate':>18} {'fold':>7} {'vs0':>8} {'n_eff':>7} {'spr3h':>8}")
+    print(f"{'lesion':>20} {'gate':>18} {'fold':>7} {'vs0':>8} "
+          f"{'n_hill':>14} {'EC50':>8} {'linR2':>7} {'spr3h':>8}")
     f = lambda v: "   -   " if np.isnan(v) else f"{v:7.3f}"
     for r in rows:
+        nh = ("      -       " if np.isnan(r["n_hill"])
+              else f"{r['n_hill']:6.2f}+/-{r['se_n_hill']:.2f}")
         print(f"{r['lesion']:>20} {r['gate']:>18} {r['fold_range']:7.3f} "
-              f"{r['fold_vs_zero']:8.3f} {f(r['n_eff'])} {f(r['ratio_spread_3h'])}")
+              f"{r['fold_vs_zero']:8.3f} {nh:>14} {r['ec50']:8.0f} "
+              f"{f(r['lin_r2'])} {f(r['ratio_spread_3h'])}")
 
     print("\n  threshold sensitivity (which lesions pass the gate):")
     for th in P.THETA_SWEEP:
@@ -63,11 +76,14 @@ def main(tag="PULSE", variant="ox"):
     ax[0].axhline(P.THETA_DEFAULT, ls=":", c="r", lw=1, label=f"theta={P.THETA_DEFAULT}")
     ax[0].set_yscale("log"); ax[0].set_ylabel("fold-change")
     ax[0].set_title("Viability gate")
-    ax[1].bar(x, [0 if np.isnan(r["n_eff"]) else r["n_eff"] for r in rows], 0.5,
-              color=["tab:blue" if r["gate"] == "viable" else "lightgrey" for r in rows])
-    ax[1].axhline(rows[0]["n_eff"], ls="--", c="k", lw=1, label="intact circuit")
-    ax[1].set_ylabel("n_eff (lower = more linear)")
-    ax[1].set_title("Dose-response steepness\n(grey = gated, not measurable)")
+    ax[1].bar(x, [0 if np.isnan(r["n_hill"]) else r["n_hill"] for r in rows], 0.5,
+              yerr=[0 if np.isnan(r["se_n_hill"]) else r["se_n_hill"] for r in rows],
+              capsize=3,
+              color=["tab:blue" if r["gate"] == "viable" else "tab:orange" for r in rows])
+    ax[1].axhline(rows[0]["n_hill"], ls="--", c="k", lw=1, label="intact circuit")
+    ax[1].axhline(1.0, ls="-.", c="grey", lw=.8, label="n=1 (non-cooperative)")
+    ax[1].set_ylabel("Hill coefficient n_H (fitted, +/-SE)")
+    ax[1].set_title("Dose-response cooperativity\n(orange = gated, n_H still valid)")
     for a in ax:
         a.set_xticks(x); a.set_xticklabels(lab, rotation=30, ha="right", fontsize=8)
         a.legend(fontsize=8)

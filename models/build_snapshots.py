@@ -11,13 +11,20 @@ WHY THIS EXISTS
 
   python models/build_snapshots.py
 """
-import hashlib, json, subprocess, sys, tempfile, shutil
+import hashlib, json, subprocess, sys, tempfile, shutil, platform
 from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPOS = {"FINAL": "https://github.com/ioanna888/Ichnos-Final-Model.git",
-         "PULSE": "https://github.com/ioanna888/Ichnos_PULSE.git"}
+# PIN is the commit the published results were generated from. With
+# `--depth 1` and no pin, the MANIFEST recorded a commit that could no longer
+# be rebuilt once upstream moved: the hash documented the past but did not
+# reproduce it. Set PIN=None only to deliberately move to upstream HEAD, then
+# write the new commit back in here.
+REPOS = {"FINAL": ("https://github.com/ioanna888/Ichnos-Final-Model.git",
+                   "caf14266700071aae4f92d508b6141ff367f04eb"),
+         "PULSE": ("https://github.com/ioanna888/Ichnos_PULSE.git",
+                   "a4af617f27dc95549e9fd859a0e5794cbc70a5e3")}
 VARIANTS = ("ox", "er")
 # Files that MUST be identical across repos for arm B2 to be a controlled
 # comparison (only the sensing module may differ).
@@ -40,17 +47,33 @@ def sha(x):
 
 
 def build(work):
+    # The solver version decides the numbers, so it belongs in the manifest
+    # next to the model hashes -- not only in requirements.txt.
+    try:
+        import roadrunner, tellurium
+        env = {"python": platform.python_version(),
+               "libroadrunner": roadrunner.__version__,
+               "tellurium": tellurium.__version__}
+    except Exception:
+        env = {"python": platform.python_version()}
     manifest = {"generated_utc": datetime.now(timezone.utc).isoformat(),
+                "environment": env,
                 "repos": {}, "snapshots": {}, "downstream_sha": {}}
     helper = work / "_build_one.py"
     helper.write_text(BUILD_CODE)
 
-    for tag, url in REPOS.items():
+    for tag, (url, pin) in REPOS.items():
         dst = work / tag
-        subprocess.run(["git", "clone", "-q", "--depth", "1", url, str(dst)], check=True)
+        if pin:
+            subprocess.run(["git", "clone", "-q", url, str(dst)], check=True)
+            subprocess.run(["git", "-C", str(dst), "checkout", "-q", pin], check=True)
+        else:
+            subprocess.run(["git", "clone", "-q", "--depth", "1", url, str(dst)], check=True)
         commit = subprocess.run(["git", "-C", str(dst), "rev-parse", "HEAD"],
                                 capture_output=True, text=True, check=True).stdout.strip()
-        manifest["repos"][tag] = {"url": url, "commit": commit}
+        if pin and commit != pin:
+            raise RuntimeError(f"{tag}: checked out {commit}, expected pin {pin}")
+        manifest["repos"][tag] = {"url": url, "commit": commit, "pinned": bool(pin)}
         manifest["downstream_sha"][tag] = {
             f: sha((dst / f).read_bytes()) for f in DOWNSTREAM if (dst / f).exists()}
 
@@ -61,9 +84,12 @@ def build(work):
                 print(f"  ! {tag}/{v} failed: {r.stderr.strip()[-300:]}")
                 continue
             out = HERE / f"merged_{v}_{tag}.sbml"
-            out.write_text(r.stdout)
+            # Written and hashed as BYTES. Previously the build hashed
+            # r.stdout (a str) while verify() hashed read_text(): on Windows
+            # the newline translation made an untouched file look CHANGED.
+            out.write_bytes(r.stdout.encode("utf-8"))
             manifest["snapshots"][f"{v}_{tag}"] = {
-                "file": out.name, "sha256": sha(r.stdout), "commit": commit}
+                "file": out.name, "sha256": sha(out.read_bytes()), "commit": commit}
             print(f"  ok: {out.name}  ({tag} @ {commit[:8]})")
 
     # The check that makes B2 valid or invalid.
@@ -87,7 +113,7 @@ def verify():
         f = HERE / info["file"]
         if not f.exists():
             raise FileNotFoundError(f"{f.name} missing. Run models/build_snapshots.py")
-        if sha(f.read_text()) != info["sha256"]:
+        if sha(f.read_bytes()) != info["sha256"]:
             raise RuntimeError(f"{info['file']} CHANGED after the snapshot. "
                                "Re-run build_snapshots.py.")
     return mf
