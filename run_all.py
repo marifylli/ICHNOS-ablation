@@ -21,6 +21,8 @@ ARMS   = [["arms/run_A_lesions.py", "PULSE", "ox"],
           ["arms/run_A3_sensitivity.py", "PULSE", "ox"],
           ["arms/run_A3_sensitivity.py", "PULSE", "er"],
           ["arms/run_A4_kd_spec.py", "PULSE", "ox"],
+          ["arms/run_A5_decoding.py", "PULSE", "ox"],
+          ["arms/run_A5_decoding.py", "PULSE", "er"],
           ["arms/run_B2_structure.py", "ox"],
           ["arms/run_B2_structure.py", "er"]]
 OPTIONAL = [["arms/run_B1_aicc.py"]]   # halts until data/ is populated
