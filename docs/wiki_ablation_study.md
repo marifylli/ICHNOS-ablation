@@ -1,6 +1,6 @@
 # Ablation Study
 
-*Generated from commit `a4af617f` (PULSE) and `caf14266` (FINAL). Every number
+* From two repositories (PULSE) and (FINAL). Every number
 below is reproduced by `python run_all.py`; nothing is quoted from memory.*
 
 ---
@@ -638,39 +638,129 @@ cannot assume one window for both.
 
 ### 6.6 Arm B1 — model selection on data
 
-**Not yet run.** It requires `data/delaunay2000_fig2b.csv`, a digitisation of
-Delaunay et al. 2000 Fig. 2B with a mandatory provenance header recording
-figure, panel, axis units, dose, who digitised it, when, and with which tool.
-The script halts cleanly rather than producing a placeholder result.
+**Now run.** The input is a digitisation of Delaunay et al. 2000 Fig. 2B — the
+Yap1 oxidation time course at 400 µM H₂O₂, seven points — performed by
+densitometry of the non-reducing gel. The gel crop, the densitometry script
+and the CSV are all in `data/`, and re-running the script on the archived crop
+reproduces the published column **exactly**, to three decimals.
 
-That requirement is not bureaucracy. Four separate source-mixing incidents were
-found during model construction — parameters traced to secondary descriptions
-rather than to primary measurements — including one where a
-$\beta_{\max}/\beta_{\mathrm{basal}}$ ratio was off by a factor of 4.7. The
-provenance header exists so that a fifth cannot happen silently.
+**The test set was chosen to avoid circularity.** `K_act_ox` and `n_ox` were
+fitted to Fig. 2C, which makes 2C training data; refitting on it would be
+comparing the model to the data that built it. Fig. 2B was never used for
+calibration, so it is genuinely held out — and it is the time axis, the only
+axis on which a static and an adaptive sensor differ at all. `K_act_ox` and
+`n_ox` are held fixed for both structures, so the comparison is about
+dynamics and nothing else.
 
-Rules the implementation will follow, recorded now so the analysis cannot drift:
+Two structures, same data, same error model:
 
-- **AICc, not AIC** [3, 4], since $n/k < 40$ with few timepoints:
-  $\mathrm{AICc} = n\ln(\mathrm{RSS}/n) + 2k + \dfrac{2k(k+1)}{n-k-1}$
-- **Akaike weights**, not a declared winner: $\Delta < 2$ means
-  indistinguishable, $\Delta > 10$ strong preference.
-- **Same data and same error model for both structures**, or AICc compares
-  error models rather than biology.
-- $k$ counts only the free parameters of *this* fit, plus one for $\sigma$.
-- **Most important:** a static Hill *cannot* structurally produce a transient.
-  If it loses, that is **structural inadequacy, not a statistical victory** —
-  the outcome is close to predetermined, and presenting a large $\Delta$AICc as
-  evidence would be overclaiming. We will report it as such.
+$$
+\text{static: } A(t) = A_{ss}
+\qquad
+\text{adaptive: } \frac{dA}{dt} = k_{\mathrm{on}}h(1-A) - gAX, \quad \frac{dX}{dt} = A - d_xX
+$$
 
-A stronger use of the same data, which we recommend over AICc alone, is
-**profile likelihood** [24] for $k_{\mathrm{on}}$, $k_{\mathrm{off}}$ and $d_x$. We
-already know analytically that $k_{\mathrm{on}}$ and $k_{\mathrm{off}}$ are
-non-identifiable at steady state; *demonstrating* that with flat profiles is a
-methodological result in its own right, and more honest than a comparison whose
-winner is known in advance.
+```
+                 model   k       RSS       AICc    dAICc   weight
+           static_hill   2    0.6973      -9.15     0.00    0.979
+              adaptive   4    0.1043      -1.44     7.70    0.021
+```
 
----
+**The headline result is not which model wins — it is that seven points cannot
+decide.** The adaptive structure explains 85 % of the variance and the static
+structure explains none of it (its best fit is the mean of the data, a
+horizontal line). Yet AICc prefers the static model by 7.7 units, because the
+small-sample penalty for four parameters at $n = 7$ is 20 AICc units on its
+own. Plain AIC, on the same two fits, prefers the adaptive model by 9.3.
+
+**The two criteria disagree, and we report that rather than the one we like.**
+Quoting the AIC result alone would be choosing the criterion by its answer;
+quoting the AICc result alone would claim the data supports a memoryless
+sensor, which it visibly does not. The correct statement is that $n = 7$ is
+below the resolution of this comparison.
+
+**This converts directly into a wet-lab specification.** At the same residual
+variance, **nine** time points would give ΔAICc = 5.1 in favour of the
+adaptive structure. That is the actionable output of the arm: a validation
+time course needs at least nine points, not seven, before model selection can
+say anything. The same calculation with the secondary `unmix` quantification
+gives nine points as well, so the requirement is not an artefact of how the
+gel was quantified.
+
+**Profile likelihood: what the experiment does not determine.** Re-optimising
+every other parameter at each fixed value of one gives the honest uncertainty,
+without assuming the likelihood is locally quadratic — which is exactly what
+fails for a non-identifiable parameter.
+
+| Parameter | Fitted | 95 % interval spans | Verdict |
+|---|---|---|---|
+| $k_{\mathrm{on}}$ | 1.52 min⁻¹ | 95× | flat |
+| $g = k_{\mathrm{off}}k_x$ | 0.096 | 178× | flat |
+| $d_x$ | < 10⁻⁴ | ≥ 10⁴× | flat |
+
+All three are flat. **This experiment fixes the shape of the response, not the
+rate constants.** Three consequences worth stating plainly:
+
+- $k_{\mathrm{off}}$ and $k_x$ never appear separately, because $X$ has no
+  measured scale: rescaling $X$ and dividing $k_{\mathrm{off}}$ leaves $A(t)$
+  unchanged. Only the product is identifiable, so it is fitted as one
+  parameter. Reporting a fitted $k_{\mathrm{off}} = 150$ would be reporting an
+  arbitrary point on a flat ridge.
+- The fitted $d_x$ runs to zero — a perfect adaptor — and its profile is flat
+  across four orders of magnitude. The data cannot distinguish $d_x = 0.5$
+  from $d_x = 0$. This agrees independently with arm A, where varying $d_x$
+  barely moved any performance metric.
+- The adaptive fit reproduces the rise and the peak but decays too slowly late
+  (0.32 predicted versus 0.107 measured at 60 min). The residual is one-sided
+  in the last two points, which is a **structural** limit of this motif rather
+  than a parameter that needs tuning.
+
+**What this arm does and does not license.** It licenses saying that the
+transient is real, that a memoryless sensor cannot produce it, and that the
+adaptive motif captures its shape. It does not license quoting fitted rate
+constants, and it does not license a ΔAICc claim in either direction from
+seven points.
+
+### 6.7 Arm B3 — which model should the decoder invert?
+
+B2 compares the two sensor structures on dose-response metrics and finds that
+at matched gain the **static** sensor is the better dose meter. That is the
+wrong criterion for choosing the decoder's forward model: the deliverable
+estimates (dose, time since onset), so the candidates must be compared on the
+bound for that joint estimate, at the ages the device is used at. Oxidative
+module, N = 100 cells, timing in minutes:
+
+| Age | FINAL | **PULSE** | FINAL at PULSE's gain |
+|---|---|---|---|
+| 0.5 h | 66 min / 411 % | **9 min / 132 %** | 13 min / 83 % |
+| 1 h | 19 min / 44 % | **3.7 min / 20 %** | 5.0 min / 14 % |
+| 2 h | 17 min / 16 % | **6.8 min / 10 %** | 7.4 min / 8 % |
+| 3 h | 30 min / 13 % | 18 min / 9 % | **15 min / 8 %** |
+| 4 h | 57 min / 13 % | 49 min / 10 % | **32 min / 8 %** |
+| 6 h | 181 min / 15 % | 296 min / 14 % | **109 min / 9 %** |
+
+**In the window where timing is the job (0.5–2 h), the adaptive sensor is
+4.9× better than the static one**, and still 1.3× better once the gain
+confound is removed. The mechanism is not subtle: a sensor that adapts is
+changing quickly, and rate of change is what carries time information. A
+plateau says nothing about when it was reached. For the ER module the same
+comparison gives 1.9×.
+
+**Three things argue the other way, and we report them.** The static sensor
+gives better dose accuracy everywhere (median 9 % at matched gain versus
+11 %). Beyond 4 h it also *times* better — 114 versus 157 minutes on average
+— because an adaptive sensor switches itself off and the information goes
+with it. And every kinetic parameter of the adaptive motif is
+non-identifiable from the available data (§6.6).
+
+**The decision, with its price stated.** The decoder inverts PULSE, because a
+static Hill is structurally incapable of the transient that Delaunay measured
+(§6.6) and because it buys a factor of 5 in timing resolution exactly where
+the device operates. The cost is dose accuracy and late-window timing. Two
+consequences for the software: the forward model is kept swappable rather
+than hard-coded, so the choice can be revisited when a longer time course
+exists; and $k_{\mathrm{off}}$ and $k_x$ are never exposed as separate
+tunable parameters, since only their product is identifiable.
 
 ## 7. Parameter provenance
 
@@ -742,9 +832,16 @@ lesioned circuit saturates; the er module is a perfect adaptor, does not
 saturate, and retains dose information roughly thirty times longer at 12 h. er
 parameters are provisional and er results are descriptive.
 
-**Open.** Arm B1 awaits the digitised Delaunay time course. θ awaits the
-image-pipeline noise floor. Both are named blockers with named owners rather
-than silent gaps.
+**From arm B1, now run.** The transient in Delaunay Fig. 2B is real and a
+memoryless Hill sensor cannot produce it, but seven points are too few for
+model selection to say so: AIC and AICc disagree, and nine time points would
+be needed. Every kinetic parameter of the adaptive motif is non-identifiable
+from this experiment, including $d_x$, whose profile is flat over four orders
+of magnitude — so no rate constant from this fit should be quoted as measured.
+
+**Open.** θ, `NOISE_CV` and the shared imaging error all await the image
+pipeline; each is swept rather than fixed. The er module needs calibration
+against primary sources. These are named blockers, not silent gaps.
 
 ---
 
