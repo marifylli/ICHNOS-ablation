@@ -21,8 +21,9 @@ ichnos-ablation/
 │   ├── run_A4_kd_spec.py       extension - functional Kd window
 │   ├── run_A5_decoding.py      Cramer-Rao bound on (dose, t), population
 │   ├── run_B2_structure.py     static vs adaptive sensor, same protocol
-│   └── run_B1_aicc.py          model selection on data (awaiting data)
-├── data/README.md              provenance spec for B1 input
+│   ├── run_B1_aicc.py          model selection + profile likelihood on data
+│   └── run_B3_model_choice.py  which model the DECODER should invert
+├── data/                       digitised Delaunay 2000 data + densitometry code
 ├── docs/wiki_ablation_study.md full wiki text
 └── results/                    CSV + PNG, named with upstream commit hash
 ```
@@ -55,6 +56,10 @@ python arms/run_A5_decoding.py PULSE ox      # A step 5: decoding bound
 python arms/run_A5_decoding.py PULSE er
 python arms/run_B2_structure.py ox
 python arms/run_B2_structure.py er
+python arms/run_B1_aicc.py                   # B1: model selection on data
+python arms/run_B1_aicc.py unmix             # same, secondary quantification
+python arms/run_B3_model_choice.py ox        # B3: forward model for the decoder
+python arms/run_B3_model_choice.py er
 ```
 
 ## Mapping to the iGEM Engineering Success framework
@@ -73,7 +78,8 @@ python arms/run_B2_structure.py er
 |---|---|---|---|
 | **A** | What does the sensor lose without circuit X? | lesion + performance metrics | **No** |
 | **B2** | What does sensor structure change in the readout? | same protocol, two structures | **No** |
-| **B1** | Which structure describes the data? | fit to Delaunay 2000 | **Yes** |
+| **B1** | Which structure describes the data? | fit to Delaunay 2000 Fig. 2B | **Yes** |
+| **B3** | Which model should the decoder invert? | decoding bound, both models | No |
 
 A and B2 do not fit anything — they compare performance, so there is no
 likelihood and AIC/AICc is undefined. `aicc()` lives exclusively inside
@@ -192,6 +198,13 @@ of them.
 Arms A and B2 run on in silico data: they are **methodology validation and
 power analysis, not biological proof**. B1 is not a substitute for wet-lab
 validation.
+
+B1 is the only arm fitted to measurements, and its main result is a limit on
+what those measurements can decide: with the seven points of Delaunay Fig. 2B,
+AIC and AICc disagree about which sensor structure to prefer, and every
+kinetic parameter of the adaptive motif is non-identifiable. It reports the
+sample size a validation time course would need (nine points) rather than
+declaring a winner.
 
 Results are module-specific. The ox sensor is a partial adaptor
 (`d_x = 0.5`) and saturates when the TetR feedback is removed; the er sensor
