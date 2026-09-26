@@ -1,0 +1,28 @@
+# source: Delaunay A, Isnard AD, Toledano MB. "H2O2 sensing through oxidation of
+#         the Yap1 transcription factor." EMBO J 2000;19(19):5157-5166.
+# figure: 2B -- in vivo Yap1 oxidation time course, non-reducing SDS-PAGE,
+#         400 uM H2O2, times 0/2.5/5/15/30/45/60 min. Lower band = oxidised.
+# quantity: fraction of Yap1 in the oxidised (faster-migrating) form.
+#           WITHIN-LANE ratio -- the panel measures band SHIFT, not intensity,
+#           and lane loading varies ~4x, so absolute intensity is not usable.
+# digitised_by: Marifylli Kathariou   date: 2026-09-14
+# tool: custom densitometry, data/delaunay_fig2b_densitometry.py (Python/PIL)
+# input image: data/gel_fig2b_nonreducing.png -- ARCHIVED. Re-running the
+#           script on it reproduces ox_fraction_window and lane_total_intensity
+#           exactly (verified 2026-09-25).
+# columns:
+#   ox_fraction_window = fixed row windows, identical for every lane. PRIMARY.
+#   ox_fraction_unmix  = NNLS decomposition into two templates. SECONDARY and
+#           solver-dependent: SciPy changed its nnls implementation, so this
+#           column no longer reproduces exactly. Use only as a sensitivity check.
+#   lane_total_intensity = non-reducing lane sum (loading, not signal).
+#   loading_reducing   = normalised lane sum of the REDUCING gel (loading
+#           control). Its source image was NOT archived; values are frozen.
+time_min,ox_fraction_window,ox_fraction_unmix,lane_total_intensity,loading_reducing
+0,0.050,0.000,4847,0.614
+2.5,0.897,1.000,2854,0.339
+5,0.775,1.000,3070,0.533
+15,0.690,0.993,7598,0.570
+30,0.600,0.914,11306,1.000
+45,0.248,0.450,12001,0.910
+60,0.107,0.264,6899,0.863

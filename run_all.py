@@ -6,7 +6,9 @@ Run the complete ablation study end to end, in the correct order.
 
 Order matters: snapshots -> checks -> arms. If a check fails, the arms do not
 run, because their results would not mean what the wiki says they mean.
-Arm B1 is expected to stop cleanly until the Delaunay data file is added.
+Arm B1 now runs: data/delaunay_fig2b_timecourse.csv is in the repo.
+It still fails soft, so a missing or unprovenanced data file stops that arm
+without taking the rest of the study down with it.
 """
 import subprocess, sys, time
 from pathlib import Path
@@ -25,7 +27,8 @@ ARMS   = [["arms/run_A_lesions.py", "PULSE", "ox"],
           ["arms/run_A5_decoding.py", "PULSE", "er"],
           ["arms/run_B2_structure.py", "ox"],
           ["arms/run_B2_structure.py", "er"]]
-OPTIONAL = [["arms/run_B1_aicc.py"]]   # halts until data/ is populated
+OPTIONAL = [["arms/run_B1_aicc.py"],
+            ["arms/run_B1_aicc.py", "unmix"]]   # primary column + sensitivity check
 
 
 def step(cmd, required=True):

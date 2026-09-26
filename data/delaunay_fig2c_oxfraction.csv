@@ -1,0 +1,23 @@
+# source: Delaunay A, Isnard AD, Toledano MB. EMBO J 2000;19(19):5157-5166.
+# figure: 2C -- in vivo Yap1 oxidation dose response, non-reducing SDS-PAGE,
+#         5 min exposure, 25-800 uM H2O2.
+# quantity: fraction of Yap1 in the oxidised form (within-lane ratio).
+# digitised_by: Marifylli Kathariou   date: 2026-09-14
+# tool: custom densitometry, data/delaunay_fig2c_densitometry.py (Python/PIL)
+# input image: data/fig2c_crop_as_archived.png is smaller than the crop the
+#           numbers came from (the script reads pixel rows up to 152 and the
+#           file has 90), so re-running reproduces the shape of the curve but
+#           not the values (mean abs deviation ~0.03, checked 2026-09-25).
+#           These values are therefore FROZEN, not re-executable.
+# use: these data calibrated K_act_ox and n_ox (data/fit_Kact_from_fig2c.m).
+#      They are TRAINING data and must not be used to test the sensor
+#      structure -- arm B1 tests on Fig. 2B only.
+# columns: dose_uM, ox_fraction_window (primary), ox_fraction_unmix, lane_total_intensity
+dose_uM,ox_fraction_window,ox_fraction_unmix,lane_total_intensity
+25,0.068,0.000,3973.5
+50,0.070,0.115,5634.1
+100,0.312,0.496,3739.9
+150,0.493,0.732,6579.9
+200,0.656,0.934,4799.6
+300,0.691,0.976,3470.4
+800,0.733,1.000,2951.0
