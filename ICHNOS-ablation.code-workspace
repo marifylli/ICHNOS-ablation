@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../Downloads/ichnos-ablation/arms"
+		},
+		{
+			"path": "../../../Downloads/ichnos-ablation/checks"
+		},
+		{
+			"path": "../../../Downloads/ichnos-ablation/models"
+		},
+		{
+			"path": "../../../Downloads/ichnos-ablation/results"
+		},
+		{
+			"path": "../../../Downloads/ichnos-ablation/data"
+		}
+	],
+	"settings": {}
+}

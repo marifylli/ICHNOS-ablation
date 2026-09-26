@@ -1,0 +1,3 @@
+model,k,rss,aicc,dAICc,weight,params
+static_hill,2,0.69726,-9.1455,0.0000,0.9792,A_ss=0.481
+adaptive,4,0.104297,-1.4450,7.7006,0.0208,k_on=1.52089;g = k_off*k_x=0.0959567;d_x=1.31884e-16
